@@ -128,7 +128,7 @@ int main()
 
 	//const int test_matrix_lines = 4;//Изменяем размерность на MATRIX_SIZE
 	int i, j;
-	dourle durationP, durationS;
+	double durationP, durationS;
 	double **test_matrix = new double*[MATRIX_SIZE];
 
 	// цикл по строкам
