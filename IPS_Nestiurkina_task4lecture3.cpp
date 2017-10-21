@@ -33,7 +33,7 @@ void InitMatrix(double** matrix)
 /// последний столбей матрицы - значения правых частей уравнений
 /// rows - количество строк в исходной матрице
 /// result - массив ответов СЛАУ
-void SerialGaussMethod(double **matrix, const int rows, double* result)
+double SerialGaussMethod(double **matrix, const int rows, double* result, double durS)
 {
 	int k;
 	double koef;
@@ -57,7 +57,8 @@ void SerialGaussMethod(double **matrix, const int rows, double* result)
 	}
 	high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	duration = (t2 - t1);
-	printf("Duration is: %lf seconds\n", duration.count()); // Выводим время работы прямого хода
+	durS = duration.count();
+	printf("Duration is: %lf seconds\n", durS); // Выводим время работы прямого хода
 
 	// обратный ход метода Гаусса
 	result[rows - 1] = matrix[rows - 1][rows] / matrix[rows - 1][rows - 1];
@@ -74,11 +75,12 @@ void SerialGaussMethod(double **matrix, const int rows, double* result)
 
 		result[k] /= matrix[k][k];
 	}
+	return durS;
 }
 
 /// Функция ParallelGaussMethod() решает СЛАУ методом Гаусса 
 /// с использованием cilk_for
-void ParallelGaussMethod(double **matrix, const int rows, double* result)
+double ParallelGaussMethod(double **matrix, const int rows, double* result, double durP)
 {
 	//int k;
 	//double koef;
@@ -101,7 +103,8 @@ void ParallelGaussMethod(double **matrix, const int rows, double* result)
 	}
 	high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	duration = (t2 - t1);
-	printf("Duration is: %lf seconds\n", duration.count()); // Выводим время работы прямого хода
+	durP = duration.count();
+	printf("Duration is: %lf seconds\n", durP); // Выводим время работы прямого хода
 
 	// обратный ход метода Гаусса
 	result[rows - 1] = matrix[rows - 1][rows] / matrix[rows - 1][rows - 1];
@@ -116,6 +119,7 @@ void ParallelGaussMethod(double **matrix, const int rows, double* result)
 		result[k] = temp.get_value();
 		result[k] /= matrix[k][k];
 	}
+	return durP;
 }
 
 int main()
@@ -124,7 +128,7 @@ int main()
 
 	//const int test_matrix_lines = 4;//Изменяем размерность на MATRIX_SIZE
 	int i, j;
-
+	dourle durationP, durationS;
 	double **test_matrix = new double*[MATRIX_SIZE];
 
 	// цикл по строкам
@@ -146,29 +150,24 @@ int main()
 
 	//Заполняем матрицу случайными числами
 	InitMatrix(test_matrix);
-
-	// 	Выводим матрицу для проверки правильности работы алгоритма
-	/*printf("Matrix\n");
-	for (i = 0; i < MATRIX_SIZE; ++i)
-	{
-		for (j = 0; j < MATRIX_SIZE + 1; ++j)
-			printf("m(%d)(%d) = %lf ", i, j, test_matrix[i][j]);
-		printf("\n");
-	}*/
-
-	SerialGaussMethod(test_matrix, MATRIX_SIZE, result);
-	ParallelGaussMethod(test_matrix, MATRIX_SIZE, resultP);
+	
+	durationS = SerialGaussMethod(test_matrix, MATRIX_SIZE, result, durationS);
+	durationP = ParallelGaussMethod(test_matrix, MATRIX_SIZE, resultP, durationP);
 	
 	for (i = 0; i < MATRIX_SIZE; ++i)
 	{
 		delete[]test_matrix[i];
 	}
-
-	printf("Solution:\n");
-
+	
+	printf("\n");
+	printf("Acceleration = %lf\n", durationS/durationP);
+	printf("\n");
+	printf("Solution(Serial code)\t\t\t\t\t\t Solution(Parallel code)");
+	printf("\n\n");
+	
 	for (i = 0; i < MATRIX_SIZE; ++i)
 	{
-		printf("x(%d) = %lf\n", i, result[i]);
+		printf("x(%d) = %lf\t\t\t\t\t\t x(%d) = %lf \n", i, result[i], i, resultP[i]);
 	}
 
 	delete[] result;
