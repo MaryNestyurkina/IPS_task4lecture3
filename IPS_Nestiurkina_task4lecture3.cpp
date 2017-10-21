@@ -76,6 +76,46 @@ void SerialGaussMethod(double **matrix, const int rows, double* result)
 	}
 }
 
+/// Функция ParallelGaussMethod() решает СЛАУ методом Гаусса 
+/// с использованием cilk_for
+void ParallelGaussMethod(double **matrix, const int rows, double* result)
+{
+	//int k;
+	//double koef;
+	duration<double> duration; /// Перемнная для измерения времени
+
+	//Замеряем время для прямого хода метода Гаусса
+	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	// прямой ход метода Гаусса
+	for (int k = 0; k < rows; ++k)
+	{
+		//использование cilk_for во внутреннем цикле прямого хода
+		cilk_for(int i = k + 1; i < rows; ++i)
+		{
+			double koef = -matrix[i][k] / matrix[k][k];
+			for (int j = k; j <= rows; ++j)
+			{
+				matrix[i][j] += koef * matrix[k][j];
+			}
+		}
+	}
+	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	duration = (t2 - t1);
+	printf("Duration is: %lf seconds\n", duration.count()); // Выводим время работы прямого хода
+
+	// обратный ход метода Гаусса
+	result[rows - 1] = matrix[rows - 1][rows] / matrix[rows - 1][rows - 1];
+
+	for (int k = rows - 2; k >= 0; --k)
+	{
+		result[k] = matrix[k][rows];
+		//использование cilk_for во внутреннем цикле обратного хода
+		cilk_for(int j = k + 1; j < rows; ++j)
+			result[k] -= matrix[k][j] * result[j];
+		
+		result[k] /= matrix[k][k];
+	}
+}
 
 int main()
 {
@@ -96,7 +136,7 @@ int main()
 
 	// массив решений СЛАУ
 	double *result = new double[MATRIX_SIZE];
-
+	double *resultP = new double[MATRIX_SIZE];
 	// инициализация тестовой матрицы
 	/*test_matrix[0][0] = 2; test_matrix[0][1] = 5;  test_matrix[0][2] = 4;  test_matrix[0][3] = 1;  test_matrix[0][4] = 20;
 	test_matrix[1][0] = 1; test_matrix[1][1] = 3;  test_matrix[1][2] = 2;  test_matrix[1][3] = 1;  test_matrix[1][4] = 11;
@@ -116,7 +156,8 @@ int main()
 	}*/
 
 	SerialGaussMethod(test_matrix, MATRIX_SIZE, result);
-
+	ParallelGaussMethod(test_matrix, MATRIX_SIZE, resultP);
+	
 	for (i = 0; i < MATRIX_SIZE; ++i)
 	{
 		delete[]test_matrix[i];
@@ -130,6 +171,7 @@ int main()
 	}
 
 	delete[] result;
+	delete[] resultP;
 	system("pause");
 	return 0;
 }
